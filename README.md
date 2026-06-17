@@ -1,118 +1,110 @@
-# Store App - Parcial Frontend Parte 2
+# Foodstore — Store (cliente)
 
-Frontend público para clientes desarrollado con React, TypeScript y Vite.
+**Video de presentación:** [carpeta en Google Drive](https://drive.google.com/drive/folders/1VGVLJdY9Qo6D388iF_YlcTaDRHvbVLUC?usp=drive_link)
 
-La aplicación permite ver productos, consultar detalles, armar un carrito, registrarse o iniciar sesión como cliente y realizar pedidos contra el backend.
+Tienda web pública del proyecto **Foodstore**. Permite a los clientes navegar el catálogo, armar un carrito, registrarse o iniciar sesión, gestionar direcciones de entrega, confirmar pedidos —con efectivo, transferencia o Mercado Pago— y seguir el estado de sus pedidos en tiempo real vía WebSocket.
 
-## Documentación
+Consume la API del backend en [`IntegradorBackend`](../IntegradorBackend). Para operar el catálogo y los pedidos desde el staff, existe el panel en [`IntegradorAdmin`](../IntegradorAdmin).
 
-- Documentación general: `DOCUMENTACION-STORE-APP.md`
-- Guía de transición de arquitectura: `GUIA-TRANSICION-ARQUITECTURA.md`
+## Stack
 
-## Tecnologías
+| Categoría | Tecnología |
+|-----------|------------|
+| Framework UI | React 19 |
+| Lenguaje | TypeScript |
+| Bundler / dev server | Vite 8 |
+| Routing | React Router DOM 7 |
+| Datos del servidor | TanStack Query 5 |
+| Formularios | TanStack Form |
+| Estado de cliente | Zustand (carrito con persistencia en `localStorage`, sesión) |
+| HTTP | Axios (`withCredentials` para cookie JWT) |
+| Estilos | Tailwind CSS 4 |
+| Linting | ESLint + TypeScript ESLint |
 
-- React + TypeScript + Vite
-- React Router DOM
-- TanStack Query
-- TanStack Form
-- Zustand
-- Axios
-- Tailwind CSS
+## Requisitos previos
 
-## Instalación
+- [Node.js](https://nodejs.org/) (LTS recomendado)
+- [pnpm](https://pnpm.io/)
+- Backend corriendo en `http://localhost:8000` (ver [`IntegradorBackend`](../IntegradorBackend))
+
+## Cómo correr en local
+
+1. Entrá a la carpeta del proyecto:
+
+```bash
+cd store_final
+```
+
+2. Instalá dependencias:
 
 ```bash
 pnpm install
 ```
 
-## Variables de entorno
-
-Crear un archivo `.env` a partir de `.env.example`:
+3. Configurá variables de entorno copiando `.env.example` a `.env` y ajustando los valores si hace falta:
 
 ```env
 VITE_API_URL=http://localhost:8000
+VITE_WS_URL=ws://localhost:8000/api/v1/ws/pedidos
 ```
 
-## Ejecutar el proyecto
+4. Levantá el servidor de desarrollo:
 
 ```bash
 pnpm dev
 ```
 
-## Funcionalidades
+5. Abrí en el navegador la URL que muestra la terminal (por defecto `http://localhost:5173`). Si el admin ya usa el puerto 5173, Vite asignará otro —por ejemplo `5174`—; usá siempre la URL impresa en consola.
 
-- Listado público de productos.
-- Búsqueda y filtro por categoría.
-- Detalle de producto con ruta dinámica `/products/:id`.
-- Carrito con Zustand y persistencia en localStorage.
-- Modificación de cantidades, eliminación de productos y total del carrito.
-- Registro e inicio de sesión de clientes.
-- Checkout con dirección de entrega y forma de pago.
-- Creación real de pedidos con `POST /api/v1/pedidos/`.
-- Pantalla de pedidos del cliente.
-- Cancelación de pedidos en estado permitido.
+### Otros comandos
 
-## Flujo de compra
+```bash
+pnpm build    # build de producción
+pnpm preview  # previsualizar el build
+pnpm lint     # ESLint
+```
 
-La tienda es pública para navegar productos, ver detalles y usar el carrito.
+## Qué hay en el repositorio
 
-La autenticación solo se solicita al finalizar la compra, porque el backend necesita asociar el pedido a un usuario cliente y a una dirección de entrega.
+Arquitectura por **features** (dominio de negocio) más código compartido en `shared/`:
 
-Flujo:
+```
+src/
+  router/          # rutas de la app (AppRouter)
+  shared/          # cliente Axios, NavBar
+  features/
+    catalog/       # listado y detalle de productos
+    cart/          # carrito (Zustand + localStorage)
+    auth/          # registro, login, perfil
+    checkout/      # direcciones y finalización de compra
+    orders/        # pedidos del cliente, cancelación y tiempo real
+```
 
-1. El cliente navega productos sin login.
-2. Agrega productos al carrito.
-3. Al continuar compra:
-   - si no está logueado, va a `/login`;
-   - si está logueado, va a `/checkout`.
-4. Selecciona o crea una dirección.
-5. Elige forma de pago.
-6. Confirma el pedido.
-7. El carrito se vacía y se redirige a `/orders`.
+**Módulos principales**
+
+- **Catálogo:** productos públicos con detalle en `/products/:id`.
+- **Carrito:** agregar, modificar cantidades y persistir entre recargas.
+- **Auth:** registro e inicio de sesión de clientes (`CLIENT`).
+- **Checkout:** selección de dirección, forma de pago y creación del pedido; redirección a Mercado Pago cuando corresponde.
+- **Pedidos:** historial del cliente, cancelación y actualización en vivo con WebSocket.
+
+Los imports usan el alias `@/` → `src/`.
 
 ## Rutas
 
 | Ruta | Descripción |
-|---|---|
+|------|-------------|
 | `/` | Listado de productos |
 | `/products/:id` | Detalle de producto |
 | `/cart` | Carrito |
 | `/login` | Inicio de sesión |
-| `/register` | Registro de cliente |
+| `/register` | Registro |
 | `/checkout` | Finalizar compra |
-| `/orders` | Pedidos del cliente |
-| `/profile` | Información del cliente |
+| `/addresses` | Direcciones del cliente |
+| `/orders` | Mis pedidos |
+| `/profile` | Perfil |
 
-## Estructura principal
+## Documentación adicional
 
-```txt
-src/
-  main.tsx
-  App.tsx
-  router/
-    AppRouter.tsx
-  shared/
-    api/client.ts
-    components/layout/NavBar.tsx
-  features/
-    catalog/       # productos (api, hooks, pages, types)
-    cart/          # carrito (store, pages)
-    auth/          # login, registro, perfil (api, store, hooks, pages)
-    checkout/      # finalizar compra (api, hooks, pages)
-    orders/        # pedidos del cliente (api, hooks, pages)
-```
-
-Imports con alias `@/` → `src/` (ej. `@/features/catalog`).
-
-## Requisitos cumplidos
-
-- Axios centralizado con `baseURL` desde `.env` y `withCredentials`.
-- Interceptor básico de errores.
-- React Router DOM con rutas y parámetro dinámico.
-- TanStack Query para consultas y mutaciones.
-- TanStack Form en formularios.
-- Zustand para carrito y sesión.
-- Tailwind CSS funcional.
-- Carrito persistente con localStorage.
-- Checkout y creación de pedidos.
-- Pantalla de pedidos del cliente.
+- [`DOCUMENTACION-STORE-APP.md`](./DOCUMENTACION-STORE-APP.md) — flujo funcional y detalle de módulos
+- [`GUIA-TRANSICION-ARQUITECTURA.md`](./GUIA-TRANSICION-ARQUITECTURA.md) — mapa de la arquitectura por features
